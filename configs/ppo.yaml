@@ -1,0 +1,59 @@
+# Comparison configuration: PPO with the same env pipeline and CNN extractor as SAC.
+experiment:
+  name: ppo_carracing
+  seed: 0
+  device: auto
+  track_memory_limit_fraction: 0.6
+
+env:
+  id: CarRacing-v3
+  continuous: true
+  lap_complete_percent: 0.95
+  domain_randomize: false
+  grayscale: true
+  resize: 64
+  frame_stack: 4
+  action_repeat: 2
+  n_envs: 4                       # PPO is on-policy: parallel envs decorrelate the rollout
+  vec_type: dummy
+  reward_shaping:
+    enabled: false
+    steer_change_penalty: 0.0
+    brake_gas_penalty: 0.0
+    stuck_patience: 0
+    stuck_penalty: 0.0
+
+algo:
+  name: ppo
+  hyperparams:
+    learning_rate: 0.0001
+    n_steps: 512                  # per env -> 2048 transitions per update with 4 envs
+    batch_size: 128
+    n_epochs: 10
+    gamma: 0.99
+    gae_lambda: 0.95
+    clip_range: 0.2
+    ent_coef: 0.0
+    vf_coef: 0.5
+    max_grad_norm: 0.5
+    use_sde: false
+  policy:
+    features_dim: 256
+    cnn_channels: [32, 64, 64]
+    cnn_kernels: [8, 4, 3]
+    cnn_strides: [4, 2, 1]
+    net_arch: [256, 256]
+    share_features_extractor: true  # PPO default: actor and critic share the CNN
+
+training:
+  total_timesteps: 300000
+  checkpoint_freq: 25000
+  save_replay_buffer: false
+  log_interval: 1
+  progress_bar: false
+
+evaluation:
+  eval_freq: 10000
+  n_eval_episodes: 5
+  deterministic: true
+  final_n_episodes: 10

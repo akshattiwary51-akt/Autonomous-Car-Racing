@@ -1,0 +1,18 @@
+# Verified with Python 3.13 (3.10-3.13 expected to work). See requirements-verified.txt for the exact
+# versions used to produce the results in this repo. CarRacing-v2 was REMOVED in Gymnasium 1.0; this project uses v3.
+gymnasium[box2d]>=1.0,<2.0
+stable-baselines3>=2.4,<3.0
+torch>=2.2
+numpy>=1.24
+pyyaml>=6.0
+pandas>=1.5
+matplotlib>=3.7
+plotly>=5.0
+tensorboard>=2.10
+opencv-python-headless>=4.5
+imageio>=2.20
+imageio-ffmpeg>=0.4
+psutil>=5.9
+tqdm
+rich
+pytest>=7.0

@@ -1,0 +1,75 @@
+# EXPERIMENTAL, TASK-MODIFYING (adds a progress-gated speed bonus to the TRAINING reward). Fine-tune from the 400k ppo_fast checkpoint.
+# Measured result: did NOT improve held-out laps (see README "Speed-bonus experiment"). Not recommended.
+experiment:
+  name: ppo_speed
+  seed: 0
+  device: cpu
+  track_memory_limit_fraction: 0.6
+  torch_threads: null
+env:
+  id: CarRacing-v3
+  continuous: true
+  lap_complete_percent: 0.95
+  domain_randomize: false
+  grayscale: true
+  resize: 64
+  frame_stack: 4
+  action_repeat: 4
+  n_envs: 2
+  vec_type: subproc
+  reward_scale: 0.1
+  reward_shaping:
+    enabled: true
+    steer_change_penalty: 0.0
+    brake_gas_penalty: 0.0
+    stuck_patience: 40
+    stuck_penalty: 0.0
+    speed_bonus: 0.5
+    speed_ref: 60.0
+    progress_window: 8
+algo:
+  name: ppo
+  hyperparams:
+    batch_size: 256
+    clip_range: 0.2
+    ent_coef: 0.01
+    gae_lambda: 0.95
+    gamma: 0.99
+    learning_rate: 0.0001
+    max_grad_norm: 0.5
+    n_epochs: 4
+    n_steps: 512
+    vf_coef: 0.5
+  policy:
+    features_dim: 256
+    log_std_init: -1.0
+    augment_pad: 0
+    feature_norm: none
+    cnn_channels:
+    - 32
+    - 64
+    - 64
+    cnn_kernels:
+    - 8
+    - 4
+    - 3
+    cnn_strides:
+    - 4
+    - 2
+    - 1
+    net_arch:
+    - 256
+    - 256
+    share_features_extractor: true
+training:
+  total_timesteps: 550000
+  checkpoint_freq: 20000
+  save_replay_buffer: false
+  log_interval: 1
+  progress_bar: false
+  resume_warmup_steps: 1000
+evaluation:
+  eval_freq: 20000
+  n_eval_episodes: 5
+  deterministic: false
+  final_n_episodes: 10

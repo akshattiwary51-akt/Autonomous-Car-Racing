@@ -1,0 +1,53 @@
+# PPO profile tuned for a small CPU machine. Differences from ppo.yaml (all documented in README):
+#  * action_repeat 4: each decision lasts 4 frames -> shorter horizon, faster learning per simulated frame
+#  * 2 subprocess envs (real parallelism on 2 cores)
+#  * reward_shaping.stuck_patience: truncate an episode after 40 consecutive steps without a new tile
+#    (training env only; evaluation always uses the native reward and no early stop)
+#  * log_std_init -1: initial action noise std ~0.37 instead of 1.0
+experiment:
+  name: ppo_fast
+  seed: 0
+  device: cpu
+env:
+  id: CarRacing-v3
+  grayscale: true
+  resize: 64
+  frame_stack: 4
+  action_repeat: 4
+  reward_scale: 0.1               # keeps value targets ~O(1); eval and logs stay on the native scale
+  n_envs: 2
+  vec_type: subproc
+  reward_shaping:
+    enabled: true
+    stuck_patience: 40
+    stuck_penalty: 0.0
+algo:
+  name: ppo
+  hyperparams:
+    learning_rate: 0.0001
+    n_steps: 512
+    batch_size: 256
+    n_epochs: 4
+    gamma: 0.99
+    gae_lambda: 0.95
+    clip_range: 0.2
+    ent_coef: 0.01
+    vf_coef: 0.5
+    max_grad_norm: 0.5
+  policy:
+    features_dim: 256
+    cnn_channels: [32, 64, 64]
+    cnn_kernels: [8, 4, 3]
+    cnn_strides: [4, 2, 1]
+    net_arch: [256, 256]
+    share_features_extractor: true
+    log_std_init: -1.0
+training:
+  total_timesteps: 200000
+  checkpoint_freq: 20000
+  log_interval: 1
+evaluation:
+  eval_freq: 20000
+  n_eval_episodes: 5
+  deterministic: false            # PPO policy is trained with action noise; its mean action behaves differently (measured: 138 vs 524 reward)
+  final_n_episodes: 10

@@ -1,0 +1,46 @@
+# EXPERIMENTAL SAC profile for a GPU runtime. NOT validated in this repo: on a 2-core CPU, SAC with this CNN collapsed
+# to a constant action within ~10k steps (see README "Known training failure"). It combines the three countermeasures
+# (LayerNorm head, critic-only encoder, random-shift augmentation) with update-to-data ratio 1. Treat results as an
+# experiment: run scripts/../src.diagnostics on checkpoints early (e.g. every 20k steps) to see whether the action
+# statistics stay input-dependent. Prefer configs/ppo_fast.yaml (validated) for a working agent.
+experiment:
+  name: sac_drq
+  seed: 0
+  device: auto
+env:
+  id: CarRacing-v3
+  grayscale: true
+  resize: 64
+  frame_stack: 4
+  action_repeat: 4
+  reward_scale: 0.1
+  reward_shaping:
+    enabled: true
+    stuck_patience: 40
+algo:
+  name: sac
+  hyperparams:
+    learning_rate: 0.0003
+    buffer_size: 100000
+    learning_starts: 5000
+    batch_size: 256
+    tau: 0.005
+    gamma: 0.99
+    train_freq: 1
+    gradient_steps: 1
+    ent_coef: auto
+  policy:
+    features_dim: 256
+    feature_norm: layernorm
+    augment_pad: 4
+    share_features_extractor: true
+    net_arch: [256, 256]
+training:
+  total_timesteps: 300000
+  checkpoint_freq: 20000
+  save_replay_buffer: true        # exact resume after a Colab disconnect (~3.3 GiB at 100k transitions)
+evaluation:
+  eval_freq: 20000
+  n_eval_episodes: 5
+  deterministic: true
+  final_n_episodes: 10

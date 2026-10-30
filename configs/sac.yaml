@@ -1,0 +1,60 @@
+# Primary configuration: SAC from pixels on CarRacing-v3.
+# Rationale for key choices is documented in README.md ("Hyperparameter rationale").
+experiment:
+  name: sac_carracing
+  seed: 0
+  device: auto                    # cuda when available, otherwise cpu
+  track_memory_limit_fraction: 0.6
+
+env:
+  id: CarRacing-v3                # CarRacing-v2 no longer exists in Gymnasium >= 1.0
+  continuous: true
+  lap_complete_percent: 0.95
+  domain_randomize: false
+  grayscale: true                 # color carries little information; 3x less replay memory
+  resize: 64                      # 96 -> 64 px: ~2.25x less memory and compute
+  frame_stack: 4                  # velocity/steering rate cannot be inferred from one frame
+  action_repeat: 2                # each decision lasts 2 sim frames (credit assignment, speed)
+  n_envs: 1
+  vec_type: dummy
+  reward_shaping:
+    enabled: false                # baseline = native reward
+    steer_change_penalty: 0.0
+    brake_gas_penalty: 0.0
+    stuck_patience: 0
+    stuck_penalty: 0.0
+
+algo:
+  name: sac
+  hyperparams:
+    learning_rate: 0.0003
+    buffer_size: 50000            # ~1.5 GiB with 64x64x4 uint8 obs; raise on big-RAM machines
+    learning_starts: 5000         # random-ish warm-up before gradient updates
+    batch_size: 128
+    tau: 0.005
+    gamma: 0.99
+    train_freq: 1
+    gradient_steps: 1             # UTD=1; on slow CPUs try train_freq: 4 (fewer updates, faster)
+    ent_coef: auto                # automatic entropy tuning (target entropy = -dim(A))
+    use_sde: false
+    optimize_memory_usage: false
+  policy:
+    features_dim: 256
+    cnn_channels: [32, 64, 64]
+    cnn_kernels: [8, 4, 3]
+    cnn_strides: [4, 2, 1]
+    net_arch: [256, 256]
+    share_features_extractor: false
+
+training:
+  total_timesteps: 300000         # agent steps (= 600k simulator frames with action_repeat=2)
+  checkpoint_freq: 25000
+  save_replay_buffer: false       # replay buffers are huge; enable only if you need exact resume
+  log_interval: 4
+  progress_bar: false
+
+evaluation:
+  eval_freq: 10000
+  n_eval_episodes: 5
+  deterministic: true
+  final_n_episodes: 10
